@@ -6,12 +6,14 @@ using System.Net.Sockets;
 using System.Text.RegularExpressions;
 using UnityEngine;
 using System.Threading;
+using System.Text;
 
 public class BrainConnect : MonoBehaviour
 {
     static readonly System.Object lockObject = new System.Object();
-    public int Port;
-    public string IpAddress;
+    public int PortPlayerOne;
+    public int PortPlayerTwo;
+    int Connections = 0;
     public string Key;
 
     public bool keyRead = true;
@@ -20,8 +22,7 @@ public class BrainConnect : MonoBehaviour
     private Thread thread;
     private string returnData = "";
     
-    UdpClient connection;
-    IPEndPoint RemoteIpEndPoint;
+    static UdpClient connection;
 
     void OnApplicationQuit() {
         connection.Close();
@@ -32,13 +33,10 @@ public class BrainConnect : MonoBehaviour
     void Start()
     {
         //Creates a UdpClient for reading incoming data.
-        UdpClient connection = new UdpClient(Port);
 
         //Creates an IPEndPoint to record the IP Address and port number of the sender. 
         // The IPEndPoint will allow you to read datagrams sent from any source.
-        IPAddress ip = System.Net.IPAddress.Parse(IpAddress);
-        RemoteIpEndPoint = new IPEndPoint(ip, 0);
-        connection.Connect(RemoteIpEndPoint);
+        Debug.Log("Gay");
         thread = new Thread(new ThreadStart(ReceiveThings));
         thread.Start();
     }
@@ -68,23 +66,24 @@ public class BrainConnect : MonoBehaviour
 
     void ReceiveThings() 
     {
+        UdpClient connection = new UdpClient(PortPlayerOne);
         Debug.Log("Entered function ReceiveThings...");
     	while (true) 
     	{
-    	 	try
-    	        {
-    	            // Blocks until a message returns on this socket from a remote host.
-    	            Debug.Log("Waiting for a message...");
-    	            Byte[] receiveBytes = connection.Receive(ref RemoteIpEndPoint);
+            IPEndPoint RemoteIpEndPoint = new IPEndPoint(IPAddress.Any, 0);
+            byte[] receiveBytes = connection.Receive(ref RemoteIpEndPoint);
 
-    	            Debug.Log("Message was received!");
-    	            string returnData = System.Text.Encoding.ASCII.GetString(receiveBytes);
+            lock (lockObject)
+            {
+                returnData = Encoding.ASCII.GetString(receiveBytes);
+
+                Debug.Log(returnData);
+                if (returnData == "1\n")
+                {
+                    //Done, notify the Update function
                     hasData = true;
-    	        }
-    	        catch (Exception)
-    	        {
-    	            // "error-handling"
-    	        }
+                }
+            }
     	}
        
     }
