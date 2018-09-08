@@ -11,9 +11,7 @@ using System.Text;
 public class BrainConnect : MonoBehaviour
 {
     static readonly System.Object lockObject = new System.Object();
-    public int PortPlayerOne;
-    public int PortPlayerTwo;
-    int Connections = 0;
+    public int Port;
     public string Key;
 
     public bool keyRead = true;
@@ -21,10 +19,11 @@ public class BrainConnect : MonoBehaviour
     private bool hasData = false;
     private Thread thread;
     private string returnData = "";
-    
+
     static UdpClient connection;
 
-    void OnApplicationQuit() {
+    void OnApplicationQuit()
+    {
         connection.Close();
         thread.Abort();
     }
@@ -36,14 +35,13 @@ public class BrainConnect : MonoBehaviour
 
         //Creates an IPEndPoint to record the IP Address and port number of the sender. 
         // The IPEndPoint will allow you to read datagrams sent from any source.
-        Debug.Log("Gay");
         thread = new Thread(new ThreadStart(ReceiveThings));
         thread.Start();
     }
 
     void Update()
     {
-        if(hasData) 
+        if (hasData)
         {
             lock (lockObject)
             {
@@ -64,27 +62,33 @@ public class BrainConnect : MonoBehaviour
         }
     }
 
-    void ReceiveThings() 
+    void ReceiveThings()
     {
-        UdpClient connection = new UdpClient(PortPlayerOne);
+        UdpClient connection = new UdpClient(Port);
         Debug.Log("Entered function ReceiveThings...");
-    	while (true) 
-    	{
+        while (true)
+        {
+
             IPEndPoint RemoteIpEndPoint = new IPEndPoint(IPAddress.Any, 0);
-            byte[] receiveBytes = connection.Receive(ref RemoteIpEndPoint);
+
+            try
+            {
+                byte[] receiveBytes = connection.Receive(ref RemoteIpEndPoint);
+                Debug.Log(receiveBytes.Length);
+                returnData = Encoding.UTF8.GetString(receiveBytes);
+                Debug.Log(returnData);
+            }
+            catch (ThreadAbortException e)
+            {
+                Debug.Log(e);
+            }
 
             lock (lockObject)
             {
-                returnData = Encoding.ASCII.GetString(receiveBytes);
-
-                Debug.Log(returnData);
-                if (returnData == "1\n")
-                {
-                    //Done, notify the Update function
-                    hasData = true;
-                }
+                //Done, notify the Update function
+                hasData = true;
             }
-    	}
-       
+        }
+
     }
 }
